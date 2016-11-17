@@ -43,6 +43,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <memory>
+#include <iostream>
+#include <fstream>
 
 #include <std_srvs/Empty.h>
 #include <std_srvs/Trigger.h>
@@ -151,17 +153,17 @@ private:
     cv::Mat image;
 
 	geometry_msgs::TransformStamped transform;
+	std::string source = image_msg->header.frame_id;
+	std::string target = "map";
+
 	try {
-		transform = tf_buffer_.lookupTransform(image_msg->header.frame_id, "map", ros::Time(0));
+		transform = tf_buffer_.lookupTransform(target, source, image_msg->header.stamp, ros::Duration(3.0));
 	}
 	catch (tf2::TransformException const & ex) {
 		ROS_WARN("%s", ex.what());
 		ros::Duration(0.5).sleep();
 		return false;
 	}
-
-	// ROS_ERROR_STREAM(transform);
-	// ROS_ERROR_STREAM(image_msg->header.frame_id);
 
 
     try
@@ -186,12 +188,26 @@ private:
 
       if ( save_all_image || save_image_service ) {
         cv::imwrite(filename, image);
-        ROS_INFO("Saved image %s", filename.c_str());
+        // ROS_INFO("Saved image %s", filename.c_str());
 
         save_image_service = false;
       } else {
         return false;
       }
+
+	  std::string odom_filename(filename + ".odom");
+	  std::ofstream myfile(odom_filename.c_str());
+	  if (myfile.is_open()) {
+		  myfile << transform.transform.rotation.w << " ";
+		  myfile << transform.transform.rotation.x << " ";
+		  myfile << transform.transform.rotation.y << " ";
+		  myfile << transform.transform.rotation.z << " ";
+
+		  myfile << transform.transform.translation.x << " ";
+		  myfile << transform.transform.translation.y << " ";
+		  myfile << transform.transform.translation.z << "\n";
+		  myfile.close();
+	  }
     } else {
       ROS_WARN("Couldn't save image, no data!");
       return false;
