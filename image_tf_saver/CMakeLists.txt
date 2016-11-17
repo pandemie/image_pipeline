@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(image_tf_saver)
 
-find_package(catkin REQUIRED COMPONENTS camera_calibration_parsers cv_bridge dynamic_reconfigure image_transport message_filters message_generation nodelet rosconsole roscpp std_srvs)
+find_package(catkin REQUIRED COMPONENTS tf2 tf2_ros camera_calibration_parsers cv_bridge dynamic_reconfigure image_transport message_filters message_generation nodelet rosconsole roscpp std_srvs)
 
 catkin_package(CATKIN_DEPENDS dynamic_reconfigure)
 find_package(Boost REQUIRED COMPONENTS signals thread)

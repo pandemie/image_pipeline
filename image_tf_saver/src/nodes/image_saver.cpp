@@ -38,6 +38,11 @@
 #include <image_transport/image_transport.h>
 #include <camera_calibration_parsers/parse.h>
 #include <boost/format.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <memory>
 
 #include <std_srvs/Empty.h>
 #include <std_srvs/Trigger.h>
@@ -58,6 +63,7 @@ bool service(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
 class Callbacks {
 public:
   Callbacks() : is_first_image_(true), has_camera_info_(false), count_(0) {
+    tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));
   }
 
   bool callbackStartSave(std_srvs::Trigger::Request &req,
@@ -143,6 +149,21 @@ public:
 private:
   bool saveImage(const sensor_msgs::ImageConstPtr& image_msg, std::string &filename) {
     cv::Mat image;
+
+	geometry_msgs::TransformStamped transform;
+	try {
+		transform = tf_buffer_.lookupTransform(image_msg->header.frame_id, "map", ros::Time(0));
+	}
+	catch (tf2::TransformException const & ex) {
+		ROS_WARN("%s", ex.what());
+		ros::Duration(0.5).sleep();
+		return false;
+	}
+
+	// ROS_ERROR_STREAM(transform);
+	// ROS_ERROR_STREAM(image_msg->header.frame_id);
+
+
     try
     {
       image = cv_bridge::toCvShare(image_msg, encoding)->image;
@@ -184,6 +205,8 @@ private:
   size_t count_;
   ros::Time start_time_;
   ros::Time end_time_;
+  boost::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  tf2_ros::Buffer tf_buffer_;
 };
 
 int main(int argc, char** argv)
